@@ -28,6 +28,8 @@ class LineProtocolConfig:
     override_measurement: str | None = None
     default_tags: Mapping[str, Any] = field(default_factory=dict)
     tags_attributes: tuple[str, ...] = ()
+    full_entity_id_tag: str | None = None
+    state_type_field: str | None = None
     include_attributes: bool = True
     ignore_attributes: tuple[str, ...] = ()
     component_config: Mapping[str, Mapping[str, Any]] = field(default_factory=dict)
@@ -64,7 +66,12 @@ def state_to_line(
         entity_id, domain, attributes, config, entity_config
     )
 
-    fields = _state_fields(state_value)
+    fields, state_type = _state_fields(state_value)
+    state_type_field = entity_config.get(
+        "state_type_field", config.state_type_field
+    )
+    if state_type_field:
+        fields[str(state_type_field)] = state_type
     include_attributes = entity_config.get(
         "include_attributes", config.include_attributes
     )
@@ -90,6 +97,11 @@ def state_to_line(
         return None
 
     tags: dict[str, Any] = {"domain": domain, "entity_id": object_id}
+    full_entity_id_tag = entity_config.get(
+        "full_entity_id_tag", config.full_entity_id_tag
+    )
+    if full_entity_id_tag:
+        tags[str(full_entity_id_tag)] = entity_id
     for key in config.tags_attributes:
         if key in attributes:
             tags[key] = attributes[key]
@@ -164,11 +176,11 @@ def _measurement_name(
     return str(measurement), include_uom, include_device_class
 
 
-def _state_fields(value: str) -> dict[str, Any]:
+def _state_fields(value: str) -> tuple[dict[str, Any], str]:
     number = _finite_float(value)
     if number is not None:
-        return {"value": number}
-    return {"state": value}
+        return {"value": number}, "number"
+    return {"state": value}, "string"
 
 
 def _attribute_fields(key: str, value: Any) -> dict[str, Any]:

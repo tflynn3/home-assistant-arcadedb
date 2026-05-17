@@ -73,6 +73,25 @@ CREATE TIMESERIES TYPE HomeAssistantEvent IF NOT EXISTS
   FIELDS (value DOUBLE, state STRING)
 ```
 
+Example ArcadeDB schema for enriched wide export that is easier to join to the
+graph:
+
+```sql
+CREATE TIMESERIES TYPE HomeAssistantStateEnriched IF NOT EXISTS
+  TIMESTAMP ts PRECISION NANOSECOND
+  TAGS (
+    domain STRING,
+    entity_id STRING,
+    full_entity_id STRING,
+    friendly_name STRING,
+    unit_of_measurement STRING,
+    device_class STRING,
+    state_class STRING,
+    source STRING
+  )
+  FIELDS (value DOUBLE, state STRING, state_type STRING)
+```
+
 ```yaml
 arcadedb:
   url: http://arcadedb.example.local:2480
@@ -124,13 +143,26 @@ arcadedb:
   verify_ssl: true
   default_tags:
     source: homeassistant
-  override_measurement: HomeAssistantEvent
+  override_measurement: HomeAssistantStateEnriched
+  full_entity_id_tag: full_entity_id
+  state_type_field: state_type
+  tags_attributes:
+    - friendly_name
+    - unit_of_measurement
+    - device_class
+    - state_class
   include_attributes: false
 ```
 
 With no `include` or `exclude` filters, all state changes are eligible for
 export. `include_attributes: false` keeps the emitted line protocol compatible
-with the fixed `HomeAssistantEvent(value DOUBLE, state STRING)` type.
+with a fixed wide type. The enriched example adds:
+
+- `full_entity_id`, which matches `HAEntity.entity_id` in graph mode
+- selected Home Assistant metadata tags for label, unit, device class, and state
+  class
+- `state_type`, which is `number` for `value` rows and `string` for `state`
+  rows
 
 Supported measurement rules:
 
@@ -140,6 +172,11 @@ Supported measurement rules:
 - `default_measurement`
 - `override_measurement`
 - `include_attributes: false` to suppress attributes for fixed wide schemas
+- `tags_attributes` to copy selected Home Assistant state attributes into tags
+- `full_entity_id_tag` to add a generated tag that matches graph
+  `HAEntity.entity_id`
+- `state_type_field` to add a generated string field describing whether the
+  exported state was numeric or string
 - per-entity/domain/glob `component_config` overrides
 
 Example per-entity override:
@@ -216,8 +253,16 @@ Each Home Assistant state change becomes one InfluxDB-style line-protocol record
 - Measurements come from the configured measurement rule and must map to an
   ArcadeDB time-series type.
 - Tags include `domain` and `entity_id` by default.
+- `entity_id` is the Home Assistant object id without the domain prefix.
+- `full_entity_id_tag` can add a tag such as `full_entity_id=sensor.example`
+  for graph joins.
+- `tags_attributes` can promote selected state attributes such as
+  `friendly_name`, `unit_of_measurement`, `device_class`, and `state_class` into
+  tags.
 - Numeric states are written as the `value` field.
 - Non-numeric states are written as the `state` string field.
+- `state_type_field` can add `state_type="number"` or `state_type="string"` to
+  distinguish rows where ArcadeDB returns default values for absent fields.
 - `unknown`, `unavailable`, and empty states are skipped.
 - Numeric attributes become fields.
 - Non-numeric attributes are written as `*_str` fields.
@@ -241,9 +286,9 @@ degC,domain=sensor,entity_id=example_temperature value=21.5 1770000000000000000
 For HACS users, publish a GitHub release for each version tag:
 
 ```bash
-git tag v0.3.0
-git push origin main v0.3.0
-gh release create v0.3.0 --title v0.3.0 --notes "..."
+git tag v0.4.0
+git push origin main v0.4.0
+gh release create v0.4.0 --title v0.4.0 --notes "..."
 ```
 
 ## Future Graph Support

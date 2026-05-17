@@ -40,6 +40,7 @@ from .const import (
     CONF_DEFAULT_MEASUREMENT,
     CONF_DEFAULT_TAGS,
     CONF_FLUSH_INTERVAL,
+    CONF_FULL_ENTITY_ID_TAG,
     CONF_GRAPH,
     CONF_GRAPH_ENABLED,
     CONF_GRAPH_INCLUDE_STATE_SNAPSHOT,
@@ -52,6 +53,7 @@ from .const import (
     CONF_QUEUE_MAX_SIZE,
     CONF_RETRY_COUNT,
     CONF_RETRY_INTERVAL,
+    CONF_STATE_TYPE_FIELD,
     CONF_TAGS_ATTRIBUTES,
     DEFAULT_BATCH_SIZE,
     DEFAULT_DATABASE,
@@ -108,6 +110,8 @@ _FILTER_SCHEMA = vol.Schema(
 _CUSTOMIZE_SCHEMA = vol.Schema(
     {
         vol.Optional(CONF_OVERRIDE_MEASUREMENT): cv.string,
+        vol.Optional(CONF_FULL_ENTITY_ID_TAG): cv.string,
+        vol.Optional(CONF_STATE_TYPE_FIELD): cv.string,
         vol.Optional(CONF_INCLUDE_ATTRIBUTES): cv.boolean,
         vol.Optional(CONF_IGNORE_ATTRIBUTES, default=[]): vol.All(
             cv.ensure_list, [cv.string]
@@ -159,6 +163,8 @@ _SCHEMA = vol.Schema(
         vol.Optional(CONF_TAGS_ATTRIBUTES, default=[]): vol.All(
             cv.ensure_list, [cv.string]
         ),
+        vol.Optional(CONF_FULL_ENTITY_ID_TAG): cv.string,
+        vol.Optional(CONF_STATE_TYPE_FIELD): cv.string,
         vol.Optional(CONF_INCLUDE_ATTRIBUTES, default=True): cv.boolean,
         vol.Optional(CONF_IGNORE_ATTRIBUTES, default=[]): vol.All(
             cv.ensure_list, [cv.string]
@@ -317,6 +323,8 @@ def _line_config(data: dict[str, Any]) -> LineProtocolConfig:
         override_measurement=data.get(CONF_OVERRIDE_MEASUREMENT),
         default_tags=data[CONF_DEFAULT_TAGS],
         tags_attributes=tuple(data[CONF_TAGS_ATTRIBUTES]),
+        full_entity_id_tag=data.get(CONF_FULL_ENTITY_ID_TAG),
+        state_type_field=data.get(CONF_STATE_TYPE_FIELD),
         include_attributes=data[CONF_INCLUDE_ATTRIBUTES],
         ignore_attributes=tuple(data[CONF_IGNORE_ATTRIBUTES]),
         component_config=data[CONF_COMPONENT_CONFIG],

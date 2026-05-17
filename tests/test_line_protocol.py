@@ -165,3 +165,70 @@ def test_can_suppress_attributes_for_wide_fixed_schema_export() -> None:
     assert "value=100.0" in line
     assert "friendly_name" not in line
     assert "device_class" not in line
+
+
+def test_enriched_metadata_tags_and_state_type_field() -> None:
+    line = state_to_line(
+        FakeState(
+            "sensor.office_temperature",
+            "21.5",
+            {
+                "friendly_name": "Office Temp",
+                "unit_of_measurement": "degC",
+                "device_class": "temperature",
+                "state_class": "measurement",
+            },
+        ),
+        LineProtocolConfig(
+            override_measurement="HomeAssistantStateEnriched",
+            default_tags={"source": "ha"},
+            tags_attributes=(
+                "friendly_name",
+                "unit_of_measurement",
+                "device_class",
+                "state_class",
+            ),
+            full_entity_id_tag="full_entity_id",
+            state_type_field="state_type",
+            include_attributes=False,
+        ),
+        TS,
+    )
+
+    assert line is not None
+    assert line.startswith(
+        "HomeAssistantStateEnriched,"
+        "device_class=temperature,"
+        "domain=sensor,"
+        "entity_id=office_temperature,"
+        r"friendly_name=Office\ Temp,"
+        "full_entity_id=sensor.office_temperature,"
+        "source=ha,"
+        "state_class=measurement,"
+        "unit_of_measurement=degC "
+    )
+    assert 'state_type="number"' in line
+    assert "value=21.5" in line
+
+
+def test_enriched_metadata_marks_string_state_type() -> None:
+    line = state_to_line(
+        FakeState(
+            "binary_sensor.door",
+            "on",
+            {"friendly_name": "Door", "device_class": "door"},
+        ),
+        LineProtocolConfig(
+            override_measurement="HomeAssistantStateEnriched",
+            tags_attributes=("friendly_name", "device_class"),
+            full_entity_id_tag="full_entity_id",
+            state_type_field="state_type",
+            include_attributes=False,
+        ),
+        TS,
+    )
+
+    assert line is not None
+    assert "full_entity_id=binary_sensor.door" in line
+    assert 'state="on"' in line
+    assert 'state_type="string"' in line

@@ -1,6 +1,6 @@
 [project]
 name = "home-assistant-arcadedb"
-version = "0.3.0"
+version = "0.4.0"
 description = "Home Assistant custom integration for exporting state changes and metadata graphs to ArcadeDB."
 readme = "README.md"
 requires-python = ">=3.12"
