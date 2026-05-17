@@ -7,7 +7,7 @@ from collections.abc import Callable
 from typing import Any
 
 import voluptuous as vol
-from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_EXCLUDE,
     CONF_INCLUDE,
@@ -142,30 +142,41 @@ CONFIG_SCHEMA = vol.Schema({DOMAIN: _SCHEMA}, extra=vol.ALLOW_EXTRA)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Set up YAML import for ArcadeDB."""
+    """Set up ArcadeDB from YAML."""
     if DOMAIN not in config:
         return True
 
-    hass.async_create_task(
-        hass.config_entries.flow.async_init(
-            DOMAIN,
-            context={"source": SOURCE_IMPORT},
-            data=dict(config[DOMAIN]),
-        )
-    )
-    return True
+    return await _async_setup_exporter(hass, "yaml", _SCHEMA(dict(config[DOMAIN])))
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ArcadeDBConfigEntry) -> bool:
     """Set up ArcadeDB exporter from a config entry."""
-    data = _entry_config(entry)
+    try:
+        return await _async_setup_exporter(
+            hass, entry.entry_id, _entry_config(entry), config_entry=True
+        )
+    except ArcadeDBTransientError as err:
+        raise ConfigEntryNotReady(str(err)) from err
+
+
+async def _async_setup_exporter(
+    hass: HomeAssistant,
+    runtime_id: str,
+    data: dict[str, Any],
+    *,
+    config_entry: bool = False,
+) -> bool:
+    """Start an ArcadeDB exporter runtime."""
     session = async_get_clientsession(hass, verify_ssl=data[CONF_VERIFY_SSL])
     client = ArcadeDBClient(session, _client_config(data))
 
     try:
         await client.async_ping()
     except ArcadeDBTransientError as err:
-        raise ConfigEntryNotReady(str(err)) from err
+        if config_entry:
+            raise
+        _LOGGER.error("ArcadeDB connection failed during YAML setup: %s", err)
+        return False
     except ArcadeDBAuthError:
         _LOGGER.error("ArcadeDB authentication failed")
         return False
@@ -196,7 +207,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ArcadeDBConfigEntry) -> 
             exporter.queue_state(state, event.time_fired)
 
     unsubscribe = hass.bus.async_listen(EVENT_STATE_CHANGED, _handle_state_change)
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
+    hass.data.setdefault(DOMAIN, {})[runtime_id] = {
         "exporter": exporter,
         "unsubscribe": unsubscribe,
     }
