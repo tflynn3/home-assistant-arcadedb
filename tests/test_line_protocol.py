@@ -103,6 +103,31 @@ def test_component_measurement_and_ignore_override() -> None:
     assert "friendly_name" not in line
 
 
+def test_component_can_suppress_attributes() -> None:
+    line = state_to_line(
+        FakeState(
+            "sensor.power",
+            "100",
+            {"unit_of_measurement": "W", "friendly_name": "Power"},
+        ),
+        LineProtocolConfig(
+            component_config={
+                "sensor.power": {
+                    "override_measurement": "PowerReading",
+                    "include_attributes": False,
+                }
+            }
+        ),
+        TS,
+    )
+
+    assert line is not None
+    assert line.startswith("PowerReading,")
+    assert "value=100.0" in line
+    assert "friendly_name" not in line
+    assert "unit_of_measurement" not in line
+
+
 def test_precision_ms_timestamp() -> None:
     line = state_to_line(
         FakeState("sensor.test", "1", {"unit_of_measurement": "items"}),
@@ -112,3 +137,31 @@ def test_precision_ms_timestamp() -> None:
 
     assert line is not None
     assert line.endswith(" 1767323045123")
+
+
+def test_can_suppress_attributes_for_wide_fixed_schema_export() -> None:
+    line = state_to_line(
+        FakeState(
+            "sensor.power",
+            "100",
+            {
+                "unit_of_measurement": "W",
+                "friendly_name": "Power",
+                "device_class": "power",
+            },
+        ),
+        LineProtocolConfig(
+            override_measurement="HomeAssistantEvent",
+            default_tags={"source": "ha"},
+            include_attributes=False,
+        ),
+        TS,
+    )
+
+    assert line is not None
+    assert line.startswith(
+        "HomeAssistantEvent,domain=sensor,entity_id=power,source=ha "
+    )
+    assert "value=100.0" in line
+    assert "friendly_name" not in line
+    assert "device_class" not in line

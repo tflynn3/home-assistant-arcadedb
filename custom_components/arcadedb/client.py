@@ -1,9 +1,10 @@
-"""Async ArcadeDB HTTP client for time-series writes."""
+"""Async ArcadeDB HTTP client for time-series and graph writes."""
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from urllib.parse import quote
 
 from aiohttp import BasicAuth
@@ -47,7 +48,7 @@ class ArcadeDBClientConfig:
 
 
 class ArcadeDBClient:
-    """Minimal async client for ArcadeDB time-series ingestion."""
+    """Minimal async client for ArcadeDB ingestion."""
 
     def __init__(self, session: ClientSession, config: ArcadeDBClientConfig) -> None:
         self._session = session
@@ -96,6 +97,56 @@ class ArcadeDBClient:
         ) as response:
             await self._raise_for_status(response.status, await response.text())
 
+    async def async_command(
+        self,
+        language: str,
+        command: str,
+        *,
+        limit: int | None = None,
+    ) -> str:
+        """Execute an ArcadeDB database command and return the response body."""
+        payload: dict[str, Any] = {"language": language, "command": command}
+        if limit is not None:
+            payload["limit"] = limit
+
+        url = self._url(f"/api/v1/command/{quote(self._config.database, safe='')}")
+        async with self._session.post(
+            url,
+            auth=self._auth,
+            json=payload,
+            ssl=self._ssl,
+            timeout=self._config.timeout,
+        ) as response:
+            body = await response.text()
+            await self._raise_for_status(response.status, body)
+            self._raise_for_error_body(body)
+            return body
+
+    async def async_query(
+        self,
+        language: str,
+        command: str,
+        *,
+        limit: int | None = None,
+    ) -> str:
+        """Execute an ArcadeDB query and return the response body."""
+        payload: dict[str, Any] = {"language": language, "command": command}
+        if limit is not None:
+            payload["limit"] = limit
+
+        url = self._url(f"/api/v1/query/{quote(self._config.database, safe='')}")
+        async with self._session.post(
+            url,
+            auth=self._auth,
+            json=payload,
+            ssl=self._ssl,
+            timeout=self._config.timeout,
+        ) as response:
+            body = await response.text()
+            await self._raise_for_status(response.status, body)
+            self._raise_for_error_body(body)
+            return body
+
     @property
     def _auth(self) -> BasicAuth | None:
         if self._config.username is None:
@@ -121,3 +172,14 @@ class ArcadeDBClient:
         if status in (408, 425, 429) or status >= 500:
             raise ArcadeDBTransientError(f"Temporary ArcadeDB failure: {message}")
         raise ArcadeDBPermanentError(f"ArcadeDB rejected the request: {message}")
+
+    @staticmethod
+    def _raise_for_error_body(body: str) -> None:
+        try:
+            payload = json.loads(body)
+        except ValueError:
+            return
+        if not isinstance(payload, dict) or "error" not in payload:
+            return
+        detail = payload.get("detail") or payload["error"]
+        raise ArcadeDBPermanentError(f"ArcadeDB command failed: {detail}")

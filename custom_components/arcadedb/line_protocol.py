@@ -28,6 +28,7 @@ class LineProtocolConfig:
     override_measurement: str | None = None
     default_tags: Mapping[str, Any] = field(default_factory=dict)
     tags_attributes: tuple[str, ...] = ()
+    include_attributes: bool = True
     ignore_attributes: tuple[str, ...] = ()
     component_config: Mapping[str, Mapping[str, Any]] = field(default_factory=dict)
     component_config_domain: Mapping[str, Mapping[str, Any]] = field(
@@ -64,22 +65,26 @@ def state_to_line(
     )
 
     fields = _state_fields(state_value)
+    include_attributes = entity_config.get(
+        "include_attributes", config.include_attributes
+    )
     ignore_attributes = set(config.ignore_attributes)
     ignore_attributes.update(entity_config.get("ignore_attributes", ()) or ())
 
     tag_attribute_names = set(config.tags_attributes)
-    for key, value in attributes.items():
-        if key in tag_attribute_names:
-            continue
-        if key in ignore_attributes:
-            continue
-        if key == "unit_of_measurement" and not include_uom:
-            continue
-        if key == "device_class" and not include_device_class:
-            continue
+    if include_attributes:
+        for key, value in attributes.items():
+            if key in tag_attribute_names:
+                continue
+            if key in ignore_attributes:
+                continue
+            if key == "unit_of_measurement" and not include_uom:
+                continue
+            if key == "device_class" and not include_device_class:
+                continue
 
-        field_key = key if key not in fields else f"{key}_"
-        fields.update(_attribute_fields(field_key, value))
+            field_key = key if key not in fields else f"{key}_"
+            fields.update(_attribute_fields(field_key, value))
 
     if not fields:
         return None

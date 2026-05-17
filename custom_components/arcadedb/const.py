@@ -10,7 +10,12 @@ CONF_DEFAULT_MEASUREMENT = "default_measurement"
 CONF_DEFAULT_TAGS = "default_tags"
 CONF_ENTITY_GLOBS = "entity_globs"
 CONF_FLUSH_INTERVAL = "flush_interval"
+CONF_GRAPH = "graph"
+CONF_GRAPH_ENABLED = "enabled"
+CONF_GRAPH_INCLUDE_STATE_SNAPSHOT = "include_state_snapshot"
+CONF_GRAPH_SYNC_INTERVAL = "sync_interval"
 CONF_IGNORE_ATTRIBUTES = "ignore_attributes"
+CONF_INCLUDE_ATTRIBUTES = "include_attributes"
 CONF_MEASUREMENT_ATTR = "measurement_attr"
 CONF_OVERRIDE_MEASUREMENT = "override_measurement"
 CONF_PRECISION = "precision"
@@ -25,6 +30,7 @@ CONF_COMPONENT_CONFIG_GLOB = "component_config_glob"
 DEFAULT_BATCH_SIZE = 100
 DEFAULT_DATABASE = "homeassistant"
 DEFAULT_FLUSH_INTERVAL = 5.0
+DEFAULT_GRAPH_SYNC_INTERVAL = 3600.0
 DEFAULT_MEASUREMENT_ATTR = "unit_of_measurement"
 DEFAULT_PRECISION = "ns"
 DEFAULT_QUEUE_MAX_SIZE = 10000
@@ -35,4 +41,3 @@ MEASUREMENT_ATTR_OPTIONS = ("unit_of_measurement", "domain__device_class", "enti
 PRECISION_OPTIONS = ("ns", "us", "ms", "s")
 
 EVENT_NEW_STATE = "new_state"
-

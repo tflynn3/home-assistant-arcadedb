@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "ArcadeDB",
-        "description": "Export Home Assistant state changes to ArcadeDB time series.",
+        "description": "Export Home Assistant state changes and optional metadata graph snapshots to ArcadeDB.",
         "data": {
           "url": "ArcadeDB URL",
           "database": "Database",
@@ -34,4 +34,3 @@
     }
   }
 }
-
