@@ -1,0 +1,37 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "ArcadeDB",
+        "description": "Export Home Assistant state changes to ArcadeDB time series.",
+        "data": {
+          "url": "ArcadeDB URL",
+          "database": "Database",
+          "username": "Username",
+          "password": "Password",
+          "verify_ssl": "Verify TLS certificate",
+          "precision": "Timestamp precision",
+          "batch_size": "Batch size",
+          "flush_interval": "Flush interval",
+          "max_retries": "Maximum retries"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to ArcadeDB.",
+      "invalid_auth": "ArcadeDB authentication failed.",
+      "invalid_config": "ArcadeDB rejected the configuration.",
+      "invalid_database": "The ArcadeDB database does not exist.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "ArcadeDB is already configured.",
+      "cannot_connect": "Cannot connect to ArcadeDB.",
+      "invalid_auth": "ArcadeDB authentication failed.",
+      "invalid_config": "ArcadeDB rejected the configuration.",
+      "invalid_database": "The ArcadeDB database does not exist.",
+      "unknown": "Unexpected error."
+    }
+  }
+}
+

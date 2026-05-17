@@ -1,0 +1,29 @@
+[project]
+name = "home-assistant-arcadedb"
+version = "0.1.0"
+description = "Home Assistant custom integration for exporting state changes to ArcadeDB time series."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+authors = [{ name = "tflynn3" }]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[dependency-groups]
+dev = [
+    "aiohttp>=3.11",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.25",
+    "ruff>=0.9",
+    "voluptuous>=0.15",
+    "yarl>=1.18",
+]
