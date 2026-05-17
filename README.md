@@ -43,6 +43,21 @@ The config flow supports the connection and basic batching settings.
 For alpha testing, YAML is the most complete configuration surface because it
 also supports include/exclude filters, default tags, and measurement controls.
 
+ArcadeDB requires the target time-series type to exist before line-protocol
+writes are accepted, unless the server is configured with
+`arcadedb.tsAutoCreateType=true`. For the safest first run, use one stable
+measurement name with a narrow include list and pre-create a type that matches
+the emitted fields.
+
+Example ArcadeDB schema for numeric-only state export:
+
+```sql
+CREATE TIMESERIES TYPE HomeAssistantState IF NOT EXISTS
+  TIMESTAMP ts PRECISION NANOSECOND
+  TAGS (domain STRING, entity_id STRING, source STRING)
+  FIELDS (value DOUBLE)
+```
+
 ```yaml
 arcadedb:
   url: http://arcadedb.example.local:2480
@@ -67,11 +82,13 @@ arcadedb:
       - sensor.noisy_example
   default_tags:
     source: homeassistant
-  measurement_attr: unit_of_measurement
-  tags_attributes:
-    - device_class
+  override_measurement: HomeAssistantState
   ignore_attributes:
     - attribution
+    - device_class
+    - friendly_name
+    - state_class
+    - unit_of_measurement
 ```
 
 Supported measurement rules:
@@ -105,7 +122,8 @@ arcadedb:
 
 Each Home Assistant state change becomes one InfluxDB-style line-protocol record.
 
-- Measurements come from the configured measurement rule.
+- Measurements come from the configured measurement rule and must map to an
+  ArcadeDB time-series type.
 - Tags include `domain` and `entity_id` by default.
 - Numeric states are written as the `value` field.
 - Non-numeric states are written as the `state` string field.
