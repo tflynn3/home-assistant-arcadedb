@@ -146,6 +146,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     if DOMAIN not in config:
         return True
 
+    _LOGGER.info("Setting up ArcadeDB exporter from YAML")
     return await _async_setup_exporter(hass, "yaml", _SCHEMA(dict(config[DOMAIN])))
 
 
@@ -211,6 +212,7 @@ async def _async_setup_exporter(
         "exporter": exporter,
         "unsubscribe": unsubscribe,
     }
+    _LOGGER.info("ArcadeDB exporter started")
     return True
 
 
